@@ -28,7 +28,7 @@ object Main extends Runner {
   def program(from: File) = for {
     ce <- Conf.mutable(Source.FileSource(from))
     c <- ce.fold(fa => {
-        logging.error(s"Unable to parse file: ${from.getName}, exception: ${fa.getCause}")
+        logging.error(s"Unable to parse file: ${from.getName}, exception: ${fa.getCause}").unsafeRun()
         Stream.empty
       }, fb => Stream.emit(fb))
     v <- Stream.eval(reader(c))

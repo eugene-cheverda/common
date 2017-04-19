@@ -1,11 +1,12 @@
 package pulse.config
 
+import cats.syntax.either._
 import com.typesafe.config.ConfigFactory
 import fs2.Task
 import fs2.util.Attempt
 import pulse.common.exceptions.NotSupportedException
 
-import scala.util.{Failure, Success, Try}
+import scala.util.Try
 
 package object typesafe {
   import Task._
@@ -24,12 +25,10 @@ package object typesafe {
 
 
   implicit val mutableBuilder: MutableBuilder = new MutableBuilder {
+    import pulse.common.syntax._
     def apply(source: Source): fs2.Stream[Task, Attempt[Conf]] = source match {
       case Source.FileSource(f) => Listeners.file(f.toPath).map {
-        _ => Try(ConfigFactory.parseFile(f)) match {
-          case Success(s) => Attempt(new TypesafeConf(s))
-          case Failure(err) => Left(err)
-        }
+        _ => transform(Try(ConfigFactory.parseFile(f))).map(c => new TypesafeConf(c))
       }
       case x => fs2.Stream.eval(fail(NotSupportedException(s"Source '$x' is not supported")))
     }
